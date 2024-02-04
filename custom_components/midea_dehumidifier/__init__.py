@@ -9,7 +9,6 @@ DOMAIN = "midea_dehumidifier"
 MIDEA_API_CLIENT = "midea_api_client"
 MIDEA_TARGET_DEVICE = "midea_target_device"
 
-
 import logging
 import voluptuous as vol
 import homeassistant.helpers.config_validation as cv
@@ -24,14 +23,17 @@ _LOGGER = logging.getLogger(__name__)
 CONF_SHA256_PASSWORD = 'sha256password'
 CONF_DEVICEID = 'deviceId'
 
-CONFIG_SCHEMA = vol.Schema({
-    DOMAIN: vol.Schema({
-        vol.Required(CONF_USERNAME): cv.string,
-        vol.Optional(CONF_PASSWORD): cv.string,
-        vol.Optional(CONF_SHA256_PASSWORD): cv.string,
-        vol.Optional(CONF_DEVICEID): cv.string
-    })
-}, extra=vol.ALLOW_EXTRA)
+CONFIG_SCHEMA = vol.Schema(
+    {
+        DOMAIN:
+        vol.Schema({
+            vol.Required(CONF_USERNAME): cv.string,
+            vol.Optional(CONF_PASSWORD): cv.string,
+            vol.Optional(CONF_SHA256_PASSWORD): cv.string,
+            vol.Optional(CONF_DEVICEID): cv.string
+        })
+    },
+    extra=vol.ALLOW_EXTRA)
 
 
 async def async_setup(hass, config):
@@ -40,20 +42,24 @@ async def async_setup(hass, config):
     _LOGGER.debug("midea_dehumidifier: starting async_setup")
 
     if DOMAIN not in config:
-        _LOGGER.error("midea_dehumi: cannot find midea_dehumi platform on configuration.yaml")
+        _LOGGER.error(
+            "midea_dehumi: cannot find midea_dehumi platform on configuration.yaml"
+        )
         return False
 
     from midea_inventor_lib import MideaClient
-    	
+
     username = config[DOMAIN].get(CONF_USERNAME)
     password = config[DOMAIN].get(CONF_PASSWORD)
     sha256password = config[DOMAIN].get(CONF_SHA256_PASSWORD)
     deviceId = config[DOMAIN].get(CONF_DEVICEID)
-	
+
     #_LOGGER.debug("midea_dehumi: CONFIG PARAMS: username=%s, password=%s, sha256password=%s, deviceId=%s", username, password, sha256password, deviceId)
 
     if not password and not sha256password:
-        _LOGGER.error("midea_dehumi: either plain-text password or password's sha256 hash should be specified in config entries.")
+        _LOGGER.error(
+            "midea_dehumi: either plain-text password or password's sha256 hash should be specified in config entries."
+        )
         return False
 
     #Create client
@@ -75,10 +81,11 @@ async def async_setup(hass, config):
 
     #appliances = client.listAppliances()
     appliances = await hass.async_add_executor_job(client.listAppliances)
-    
+
     appliancesStr = ""
     for a in appliances:
-        appliancesStr = "[id="+a["id"]+" type="+a["type"]+" name="+a["name"]+"]"
+        appliancesStr = "[id=" + a["id"] + " type=" + a["type"] + " name=" + a[
+            "name"] + "]"
         if a["onlineStatus"] == "1":
             appliancesStr += " is online,"
         else:
@@ -87,9 +94,9 @@ async def async_setup(hass, config):
             appliancesStr += " is active.\n"
         else:
             appliancesStr += " is not active.\n"
-		
-    _LOGGER.info("midea-dehumi: "+appliancesStr)
-    
+
+    _LOGGER.info("midea-dehumi: " + appliancesStr)
+
     #The first appliance having type="0xA1" is returned for default (TODO: otherwise, 'deviceId' configuration option can be used)
     targetDevice = None
     if not deviceId:
@@ -104,16 +111,19 @@ async def async_setup(hass, config):
                 if a["type"] == "0xA1" and deviceID == str(a["id"]):
                     targetDevice = a
 
-
     if targetDevice:
         _LOGGER.info("midea-dehumidifier: device type 0xA1 found.")
 
         hass.data[MIDEA_API_CLIENT] = client
-        _LOGGER.info("midea-dehumidifier: loading humidifier entity sub-component...")
-        load_platform(hass, 'humidifier', DOMAIN, {MIDEA_TARGET_DEVICE: targetDevice}, config)
+        _LOGGER.info(
+            "midea-dehumidifier: loading humidifier entity sub-component...")
+        load_platform(hass, 'humidifier', DOMAIN,
+                      {MIDEA_TARGET_DEVICE: targetDevice}, config)
 
-        _LOGGER.info("midea-dehumidifier: loading sensor entity sub-component...")
-        load_platform(hass, 'sensor', DOMAIN, {MIDEA_TARGET_DEVICE: targetDevice}, config)
+        _LOGGER.info(
+            "midea-dehumidifier: loading sensor entity sub-component...")
+        load_platform(hass, 'sensor', DOMAIN,
+                      {MIDEA_TARGET_DEVICE: targetDevice}, config)
 
         _LOGGER.info("midea_dehumidifier: platform successfuly initialized.")
         return True
